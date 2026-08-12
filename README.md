@@ -59,7 +59,18 @@ python3 -m http.server 8000
 
 Then visit `http://localhost:8000`.
 
-**Use it from anywhere (hosted URL):** a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys this repo to GitHub Pages on every push to `main`. To turn it on: repo **Settings → Pages → Source: GitHub Actions**, then push/merge to `main`. It'll be live at `https://<your-username>.github.io/<repo-name>/` — bookmark that URL on your phone or laptop and use it at the expo booth.
+**Use it from anywhere (hosted URL):** two deploy options are set up, pick either (or both):
+
+- **Vercel** (recommended — fastest to set up, custom domains, instant redeploys on push):
+  1. Go to [vercel.com/new](https://vercel.com/new) and import this GitHub repo (`aribanigar/expodetailsscrapper`).
+  2. Vercel reads `vercel.json` and deploys it as a static site — no build step, no config needed. Click **Deploy**.
+  3. You get a `https://<project-name>.vercel.app` URL immediately, and every push to `main` auto-redeploys.
+  
+  Or via CLI: `npx vercel --prod` from the repo root.
+
+- **GitHub Pages**: a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys this repo on every push to `main`. To turn it on: repo **Settings → Pages → Source: GitHub Actions**, then push/merge to `main`. It'll be live at `https://<your-username>.github.io/<repo-name>/`.
+
+Either way, bookmark the resulting URL on your phone or laptop and use it at the expo booth.
 
 **Workflow:**
 
