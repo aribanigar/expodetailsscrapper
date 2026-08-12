@@ -1,0 +1,16 @@
+{
+  "name": "expo-details-scrapper",
+  "version": "1.0.0",
+  "description": "Extract business name, contact, phone, email, website, location, and nature of business from photos of business cards. OCR + heuristics, no LLM.",
+  "bin": {
+    "expo-scan": "./bin/scan.js"
+  },
+  "main": "lib/parseCard.js",
+  "scripts": {
+    "scan": "node bin/scan.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "tesseract.js": "^5.1.1"
+  }
+}
