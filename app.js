@@ -2,6 +2,8 @@ const STORAGE_KEY = "expoScrapperEntries";
 const { parseCardText, FIELDS: fields } = window.CardParser;
 
 const fileInput = document.getElementById("fileInput");
+const folderInput = document.getElementById("folderInput");
+const folderBtn = document.getElementById("folderBtn");
 const dropZone = document.getElementById("dropZone");
 const statusPanel = document.getElementById("statusPanel");
 const progressFill = document.getElementById("progressFill");
@@ -26,16 +28,57 @@ let nextId = 1;
 dropZone.addEventListener("click", () => fileInput.click());
 dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
 dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-dropZone.addEventListener("drop", e => {
+dropZone.addEventListener("drop", async e => {
   e.preventDefault();
   dropZone.classList.remove("dragover");
-  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith("image/"));
+  const files = await filesFromDataTransfer(e.dataTransfer);
   if (files.length) handleFiles(files);
 });
 fileInput.addEventListener("change", () => {
-  if (fileInput.files.length) handleFiles([...fileInput.files]);
+  if (fileInput.files.length) handleFiles([...fileInput.files].filter(f => f.type.startsWith("image/")));
   fileInput.value = "";
 });
+folderBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  folderInput.click();
+});
+folderInput.addEventListener("change", () => {
+  if (folderInput.files.length) handleFiles([...folderInput.files].filter(f => f.type.startsWith("image/")));
+  folderInput.value = "";
+});
+
+// Drag-and-drop of a folder only yields its files via the async Directory
+// Entries API — a plain e.dataTransfer.files read would silently drop them.
+async function filesFromDataTransfer(dataTransfer) {
+  const items = dataTransfer.items;
+  if (!items || !items.length || typeof items[0].webkitGetAsEntry !== "function") {
+    return [...dataTransfer.files].filter(f => f.type.startsWith("image/"));
+  }
+  const entries = [...items].map(item => item.webkitGetAsEntry()).filter(Boolean);
+  const files = [];
+  await Promise.all(entries.map(entry => collectEntryFiles(entry, files)));
+  return files.filter(f => f.type.startsWith("image/"));
+}
+
+function collectEntryFiles(entry, files) {
+  return new Promise(resolve => {
+    if (entry.isFile) {
+      entry.file(file => { files.push(file); resolve(); }, resolve);
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const readAll = () => {
+        reader.readEntries(async batch => {
+          if (!batch.length) return resolve();
+          await Promise.all(batch.map(e => collectEntryFiles(e, files)));
+          readAll(); // readEntries may not return all entries in one call
+        }, resolve);
+      };
+      readAll();
+    } else {
+      resolve();
+    }
+  });
+}
 
 function handleFiles(files) {
   const items = files.map(file => ({

@@ -15,9 +15,11 @@
   <main>
     <section class="upload-panel" id="uploadPanel">
       <input type="file" id="fileInput" accept="image/*" capture="environment" multiple hidden>
+      <input type="file" id="folderInput" webkitdirectory directory multiple hidden>
       <div class="drop-zone" id="dropZone">
-        <p><strong>Click to upload</strong> or drag photos here</p>
-        <p class="hint">Select one photo or many at once — JPG, PNG, or take a photo on mobile</p>
+        <p><strong>Click to upload</strong> or drag photos (or a whole folder) here</p>
+        <p class="hint">One photo, several at once, or an entire folder — JPG, PNG, or take a photo on mobile</p>
+        <button type="button" id="folderBtn" class="secondary-btn">Choose a folder</button>
       </div>
     </section>
 

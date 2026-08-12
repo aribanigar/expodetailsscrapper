@@ -57,6 +57,10 @@ section {
   border-color: var(--accent);
   background: #fdf6ec;
 }
+.drop-zone #folderBtn {
+  margin-top: 14px;
+  cursor: pointer;
+}
 .drop-zone p { margin: 4px 0; }
 .hint { color: var(--muted); font-size: 0.88rem; }
 

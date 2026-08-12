@@ -74,7 +74,7 @@ Either way, bookmark the resulting URL on your phone or laptop and use it at the
 
 **Workflow:**
 
-1. Click the upload area (or drag files in) — select **one photo or many at once**.
+1. Click the upload area to select one photo or many at once, click **Choose a folder** to pick an entire folder of photos, or just drag files (or a whole folder) onto the page — all three work.
 2. Each photo is OCR'd automatically; a review table fills in as each finishes, with a thumbnail per row.
 3. Correct any field OCR got wrong directly in the table.
 4. Click **Save all to list** to add every reviewed row to your running list (or **Discard** to drop the batch).
