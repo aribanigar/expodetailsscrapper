@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expo Details Scrapper</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Expo Details Scrapper</h1>
+    <p class="subtitle">Upload a business card photo — we'll pull out the business name, contact person, phone, email, website, location, and nature of business.</p>
+  </header>
+
+  <main>
+    <section class="upload-panel" id="uploadPanel">
+      <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+      <div class="drop-zone" id="dropZone">
+        <p><strong>Click to upload</strong> or drag a photo here</p>
+        <p class="hint">JPG, PNG, or take a photo directly on mobile</p>
+      </div>
+      <div class="preview-wrap" id="previewWrap" hidden>
+        <img id="previewImg" alt="Uploaded card preview">
+        <button id="rescanBtn" class="secondary-btn">Choose a different photo</button>
+      </div>
+    </section>
+
+    <section class="status-panel" id="statusPanel" hidden>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <p id="statusText">Reading image…</p>
+    </section>
+
+    <section class="results-panel" id="resultsPanel" hidden>
+      <h2>Extracted Details</h2>
+      <p class="hint">Review and correct any field before saving — OCR isn't perfect.</p>
+      <form id="resultsForm">
+        <label>Business name
+          <input type="text" id="f_business" name="business">
+        </label>
+        <label>Person name
+          <input type="text" id="f_person" name="person">
+        </label>
+        <label>Phone number
+          <input type="text" id="f_phone" name="phone">
+        </label>
+        <label>Email address
+          <input type="email" id="f_email" name="email">
+        </label>
+        <label>Website
+          <input type="text" id="f_website" name="website">
+        </label>
+        <label>Location
+          <input type="text" id="f_location" name="location">
+        </label>
+        <label>Nature of business
+          <input type="text" id="f_nature" name="nature">
+        </label>
+      </form>
+      <details class="raw-text-details">
+        <summary>Raw OCR text</summary>
+        <pre id="rawText"></pre>
+      </details>
+      <div class="actions">
+        <button id="saveEntryBtn" class="primary-btn">Add to list</button>
+      </div>
+    </section>
+
+    <section class="list-panel" id="listPanel">
+      <div class="list-header">
+        <h2>Scanned entries (<span id="entryCount">0</span>)</h2>
+        <div class="actions">
+          <button id="exportCsvBtn" class="secondary-btn" disabled>Export CSV</button>
+          <button id="exportJsonBtn" class="secondary-btn" disabled>Export JSON</button>
+          <button id="clearAllBtn" class="danger-btn" disabled>Clear all</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="entriesTable">
+          <thead>
+            <tr>
+              <th>Business</th><th>Person</th><th>Phone</th><th>Email</th>
+              <th>Website</th><th>Location</th><th>Nature of business</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="entriesBody"></tbody>
+        </table>
+      </div>
+      <p class="hint" id="emptyHint">No entries yet — scan a card above to get started.</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
