@@ -1,17 +1,18 @@
 const STORAGE_KEY = "expoScrapperEntries";
+const { parseCardText, FIELDS: fields } = window.CardParser;
 
 const fileInput = document.getElementById("fileInput");
 const dropZone = document.getElementById("dropZone");
-const uploadPanel = document.getElementById("uploadPanel");
-const previewWrap = document.getElementById("previewWrap");
-const previewImg = document.getElementById("previewImg");
-const rescanBtn = document.getElementById("rescanBtn");
 const statusPanel = document.getElementById("statusPanel");
 const progressFill = document.getElementById("progressFill");
 const statusText = document.getElementById("statusText");
+
 const resultsPanel = document.getElementById("resultsPanel");
-const rawText = document.getElementById("rawText");
-const saveEntryBtn = document.getElementById("saveEntryBtn");
+const reviewBody = document.getElementById("reviewBody");
+const reviewCount = document.getElementById("reviewCount");
+const saveAllBtn = document.getElementById("saveAllBtn");
+const discardReviewBtn = document.getElementById("discardReviewBtn");
+
 const entriesBody = document.getElementById("entriesBody");
 const entryCount = document.getElementById("entryCount");
 const emptyHint = document.getElementById("emptyHint");
@@ -19,8 +20,8 @@ const exportCsvBtn = document.getElementById("exportCsvBtn");
 const exportJsonBtn = document.getElementById("exportJsonBtn");
 const clearAllBtn = document.getElementById("clearAllBtn");
 
-const { parseCardText, FIELDS: fields } = window.CardParser;
-const fieldInputs = Object.fromEntries(fields.map(f => [f, document.getElementById("f_" + f)]));
+let reviewItems = []; // { id, file, thumbUrl, status, values: {business, person, ...} }
+let nextId = 1;
 
 dropZone.addEventListener("click", () => fileInput.click());
 dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
@@ -28,60 +29,130 @@ dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover
 dropZone.addEventListener("drop", e => {
   e.preventDefault();
   dropZone.classList.remove("dragover");
-  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  const files = [...e.dataTransfer.files].filter(f => f.type.startsWith("image/"));
+  if (files.length) handleFiles(files);
 });
 fileInput.addEventListener("change", () => {
-  if (fileInput.files[0]) handleFile(fileInput.files[0]);
-});
-rescanBtn.addEventListener("click", () => {
+  if (fileInput.files.length) handleFiles([...fileInput.files]);
   fileInput.value = "";
-  previewWrap.hidden = true;
-  dropZone.hidden = false;
-  resultsPanel.hidden = true;
-  statusPanel.hidden = true;
 });
 
-function handleFile(file) {
-  const url = URL.createObjectURL(file);
-  previewImg.src = url;
-  dropZone.hidden = true;
-  previewWrap.hidden = false;
-  resultsPanel.hidden = true;
-  runOcr(file);
+function handleFiles(files) {
+  const items = files.map(file => ({
+    id: nextId++,
+    file,
+    thumbUrl: URL.createObjectURL(file),
+    status: "pending",
+    values: Object.fromEntries(fields.map(f => [f, ""]))
+  }));
+  reviewItems = reviewItems.concat(items);
+  resultsPanel.hidden = false;
+  renderReviewTable();
+  runQueue(items);
 }
 
-async function runOcr(file) {
+async function runQueue(items) {
   statusPanel.hidden = false;
-  progressFill.style.width = "0%";
-  statusText.textContent = "Loading OCR engine…";
-
-  try {
-    const result = await Tesseract.recognize(file, "eng", {
-      logger: m => {
-        if (m.status && typeof m.progress === "number") {
-          progressFill.style.width = Math.round(m.progress * 100) + "%";
-          statusText.textContent = m.status.replace(/\b\w/g, c => c.toUpperCase()) + "…";
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    item.status = "scanning";
+    renderReviewTable();
+    statusText.textContent = `Scanning photo ${i + 1} of ${items.length}: ${item.file.name}`;
+    progressFill.style.width = Math.round((i / items.length) * 100) + "%";
+    try {
+      const result = await Tesseract.recognize(item.file, "eng", {
+        logger: m => {
+          if (m.status && typeof m.progress === "number") {
+            const overall = (i + m.progress) / items.length;
+            progressFill.style.width = Math.round(overall * 100) + "%";
+          }
         }
-      }
-    });
-    const text = result.data.text || "";
-    rawText.textContent = text.trim() || "(no text detected)";
-    const parsed = parseCardText(text);
-    fields.forEach(f => { fieldInputs[f].value = parsed[f] || ""; });
-    statusPanel.hidden = true;
-    resultsPanel.hidden = false;
-  } catch (err) {
-    statusText.textContent = "OCR failed: " + err.message;
+      });
+      const text = result.data.text || "";
+      item.values = parseCardText(text);
+      item.rawText = text.trim();
+      item.status = "done";
+    } catch (err) {
+      item.status = "error";
+      item.error = err.message;
+    }
+    renderReviewTable();
   }
+  progressFill.style.width = "100%";
+  statusText.textContent = `Done — scanned ${items.length} photo(s).`;
+  setTimeout(() => { statusPanel.hidden = true; }, 1200);
 }
 
-saveEntryBtn.addEventListener("click", () => {
-  const entry = Object.fromEntries(fields.map(f => [f, fieldInputs[f].value.trim()]));
-  if (!Object.values(entry).some(Boolean)) return;
+function renderReviewTable() {
+  reviewCount.textContent = reviewItems.length;
+  reviewBody.innerHTML = "";
+
+  reviewItems.forEach(item => {
+    const tr = document.createElement("tr");
+
+    const thumbTd = document.createElement("td");
+    thumbTd.className = "thumb-cell";
+    const img = document.createElement("img");
+    img.src = item.thumbUrl;
+    img.alt = item.file.name;
+    img.className = "thumb";
+    thumbTd.appendChild(img);
+    if (item.status === "scanning") {
+      const spinner = document.createElement("div");
+      spinner.className = "mini-status";
+      spinner.textContent = "Scanning…";
+      thumbTd.appendChild(spinner);
+    } else if (item.status === "error") {
+      const err = document.createElement("div");
+      err.className = "mini-status error";
+      err.textContent = "Failed";
+      thumbTd.appendChild(err);
+    }
+    tr.appendChild(thumbTd);
+
+    fields.forEach(f => {
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = item.values[f] || "";
+      input.disabled = item.status === "scanning";
+      input.addEventListener("input", () => { item.values[f] = input.value; });
+      td.appendChild(input);
+      tr.appendChild(td);
+    });
+
+    const delTd = document.createElement("td");
+    delTd.textContent = "✕";
+    delTd.className = "row-delete";
+    delTd.title = "Remove from review";
+    delTd.addEventListener("click", () => {
+      reviewItems = reviewItems.filter(i => i.id !== item.id);
+      if (reviewItems.length === 0) resultsPanel.hidden = true;
+      renderReviewTable();
+    });
+    tr.appendChild(delTd);
+
+    reviewBody.appendChild(tr);
+  });
+}
+
+saveAllBtn.addEventListener("click", () => {
   const entries = loadEntries();
-  entries.push(entry);
+  reviewItems.forEach(item => {
+    if (item.status === "error") return;
+    if (Object.values(item.values).some(Boolean)) entries.push({ ...item.values });
+  });
   saveEntries(entries);
+  reviewItems = [];
+  resultsPanel.hidden = true;
+  renderReviewTable();
   renderEntries();
+});
+
+discardReviewBtn.addEventListener("click", () => {
+  reviewItems = [];
+  resultsPanel.hidden = true;
+  renderReviewTable();
 });
 
 function loadEntries() {

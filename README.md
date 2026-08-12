@@ -12,8 +12,8 @@ Extracts from a photo of a business card:
 
 OCR is done with [Tesseract.js](https://github.com/naptha/tesseract.js); fields are then pulled out with regex/keyword heuristics — **no LLM, no API key, no server dependency**. Ships two ways to use it:
 
+- **Browser app** — a webapp face on it: upload a single photo or a whole batch, everything scans automatically, review/correct fields inline, build a list, export CSV/JSON. Deployable to GitHub Pages so it's reachable from any device, no install.
 - **CLI tool** — batch-scan a folder of card photos from the terminal.
-- **Browser app** — drag in one photo at a time, review/correct fields, build a list, export CSV/JSON.
 
 Both share the same extraction logic (`lib/parseCard.js`).
 
@@ -49,13 +49,25 @@ expo-scan photos/ --json
 
 ## Browser app
 
-No build step — just open `index.html` (or serve the folder):
+No build step, no server-side code — pure static HTML/JS.
+
+**Use it locally:**
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then visit `http://localhost:8000`. Upload/drag a card photo, correct any OCR mistakes in the form, click **Add to list**, repeat for more cards, then **Export CSV** / **Export JSON**. Entries persist in the browser (`localStorage`) between scans.
+Then visit `http://localhost:8000`.
+
+**Use it from anywhere (hosted URL):** a GitHub Actions workflow (`.github/workflows/deploy-pages.yml`) deploys this repo to GitHub Pages on every push to `main`. To turn it on: repo **Settings → Pages → Source: GitHub Actions**, then push/merge to `main`. It'll be live at `https://<your-username>.github.io/<repo-name>/` — bookmark that URL on your phone or laptop and use it at the expo booth.
+
+**Workflow:**
+
+1. Click the upload area (or drag files in) — select **one photo or many at once**.
+2. Each photo is OCR'd automatically; a review table fills in as each finishes, with a thumbnail per row.
+3. Correct any field OCR got wrong directly in the table.
+4. Click **Save all to list** to add every reviewed row to your running list (or **Discard** to drop the batch).
+5. Repeat for more photos, then **Export CSV** / **Export JSON** to download everything. Saved entries persist in the browser (`localStorage`) between visits.
 
 ## How extraction works
 
